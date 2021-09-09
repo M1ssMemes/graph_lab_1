@@ -11,76 +11,103 @@ namespace Graph_Lab_1
 {
     public partial class MainWindow : Window
     {
-        Point first;
-        Point last;
+        private Point _first;
+        private Point _last;
 
-        SolidColorBrush color = new SolidColorBrush();
-        bool isPressed = false;
+        private readonly SolidColorBrush _color = new SolidColorBrush();
+        private bool _isPressed;
 
         public MainWindow()
         {
             InitializeComponent();
-            color.Color = Colors.Black;
+            _color.Color = Colors.Black;
         }
 
         private void ExitButtonClick(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void DefineFirstPoint(object sender, MouseButtonEventArgs e)
         {
             Canva.Children.Clear();
-            isPressed = true;
-            first = e.GetPosition(this);
+            _isPressed = true;
+            _first = e.GetPosition(this);
+
         }
 
         private void DrawLineToPoint(object sender, MouseButtonEventArgs e)
         {
-            if (isPressed)
+            if (_isPressed)
             {
-                last = e.GetPosition(this);
+                _last = e.GetPosition(this);
 
-                var str = Data.Text;
-                var numb = Razdel(str);
 
-                DrawLine(first, last, numb);
+                try
+                {
+                    var str = Data.Text;
+                    var numb = SplitStrToInt(str);
+                    DrawLine(_first, _last, numb);
+                }
+                catch (ArgumentException _)
+                {
+                    MessageBox.Show("Введите корректные параметры штрихов!");
+                    return;
+                }
 
-                isPressed = false;
+                _isPressed = false;
             }
         }
 
         public void DrawLine(Point first, Point last, List<int> numb)
         {
+            var coords = GetCoordinates(first, last).AlternateElements(numb);
+            var brushColor = new SolidColorBrush(Colors.Black);
 
-            var coords = GetCoord(first, last).AlternateElements(numb);
-            SolidColorBrush brushcolor = new SolidColorBrush(Colors.Black);
 
-
-            foreach (var coor in coords)
+            foreach (var (x, y) in coords)
             {
-
-                var x = coor.Item1;
-                var y = coor.Item2;
-                Rectangle rec = new Rectangle();
-                Canvas.SetTop(rec, y);
-                Canvas.SetLeft(rec, x);
+                var rec = new Rectangle();
+                Canvas.SetTop(rec, y - Canva.Margin.Top);
+                Canvas.SetLeft(rec, x - Canva.Margin.Left);
 
                 rec.Width = 1;
                 rec.Height = 1;
-                rec.Fill = brushcolor;
+                rec.Fill = brushColor;
 
                 Canva.Children.Add(rec);
             }
-            return;
         }
 
-        public List<int> Razdel(string str)
+        public List<int> SplitStrToInt(string str)
         {
-            return str.Split().Select(i => int.Parse(i)).ToList();
+            var check = IsStringValid(str);
+            if (check)
+            {
+                var intList = str.Split(" ", StringSplitOptions.RemoveEmptyEntries).Select(int.Parse).ToList();
+                var containZeroes = intList.Any(i => i == 0);
+                if (containZeroes)
+                    throw new ArgumentException();
+
+                return intList;
+            }
+
+            throw new ArgumentException();
         }
 
-        public IEnumerable<Tuple<double, double>> GetCoord(Point first, Point last)
+        public bool IsStringValid(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            var isOtherCharsDetected = str.Any(c => !char.IsNumber(c) && !char.IsWhiteSpace(c));
+            if (isOtherCharsDetected)
+                return false;
+
+            return true;
+        }
+
+        public IEnumerable<Tuple<double, double>> GetCoordinates(Point first, Point last)
         {
             var x1 = first.X;
             var y1 = first.Y;
@@ -98,51 +125,20 @@ namespace Graph_Lab_1
             {
                 yield return Tuple.Create(x1, y1);
 
-                if (x1 == x2 && y1 == y2) break;
+                if (Math.Abs(x1 - x2) < 0.000001 && Math.Abs(y1 - y2) < 0.000001)
+                    break;
 
                 var e2 = 2 * err;
 
-                if (e2 > dy)
+                if (e2 >= dy)
                 {
                     err += dy;
                     x1 += sx;
                 }
-                else
+                if (e2 <= dx)
                 {
                     err += dx;
                     y1 += sy;
-                }
-            }
-        }
-    }
-
-    static class EnumExtentions
-    {
-        public static IEnumerable<T> AlternateElements<T>(this IEnumerable<T> source, List<int> num)
-        {
-
-            var i = 0;
-            var k = num[i];
-            var paint = true;
-            foreach (var element in source)
-            {
-                if (k > 0)
-                {
-                    k--;
-                    if (paint)
-                        yield return element;
-                    else
-                        continue;
-                }
-                else
-                {
-                    i++;
-
-                    if (i == num.Count)
-                        i = 0;
-
-                    k = num[i];
-                    paint = !paint;
                 }
             }
         }
