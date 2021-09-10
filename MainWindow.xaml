@@ -12,7 +12,7 @@
         <Label Content="Вариант 21. Штриховая линия с разными штрихами 5: линия из 4-х пикселей, пропуск 2-х пикселей, линия из 3-х пикселей, пропуск 2-х пикселей…" HorizontalAlignment="Left" Margin="24,10,0,0" VerticalAlignment="Top"/>
         <Button Content="Выход" HorizontalAlignment="Left" Margin="696,441,0,0" VerticalAlignment="Top" Width="108" Click="ExitButtonClick"/>
         <Label Content="Введите данные для построения линии" HorizontalAlignment="Left" Margin="645,40,0,0" VerticalAlignment="Top"/>
-        <TextBox Name ="Data"  HorizontalAlignment="Left" Margin="698,81,0,0" Text="4 2 4 2" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
+        <TextBox Name ="Data"  HorizontalAlignment="Left" Margin="698,81,0,0" Text="4 2 3 2" TextWrapping="Wrap" VerticalAlignment="Top" Width="120"/>
         <CheckBox Name="DrawCircle" Content="Рисовать окружность" HorizontalAlignment="Left" Margin="680,163,0,0" VerticalAlignment="Top"/>
 
     </Grid>
