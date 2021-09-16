@@ -47,7 +47,8 @@ namespace Graph_Lab_1
                     var str = Data.Text;
                     var numb = SplitStrToInt(str);
                     var isCircle = DrawCircle.IsChecked;
-                    DrawFigure(_first, _last, numb, isCircle);
+                    var useAlgoritm = UseAlgoritm.IsChecked;
+                    DrawFigure(_first, _last, numb, isCircle, useAlgoritm);
                 }
                 catch (ArgumentException _)
                 {
@@ -59,22 +60,30 @@ namespace Graph_Lab_1
             }
         }
 
-        public void DrawFigure(Point first, Point last, List<int> numb, bool? isCircle)
+        public void DrawFigure(Point first, Point last, List<int> numb, bool? isCircle, bool? useAlgoritm)
         {
             IEnumerable<Tuple<double, double>> coords;
-            if (isCircle.HasValue && isCircle.Value)
+            if (useAlgoritm.HasValue && useAlgoritm.Value)
             {
-                coords = GetCoordinatesCircle(first, last)
-                    .Select((item, index) => new {item, index})
-                    .OrderBy(a => a.index % 8)
-                    .Select(a => a.item);
+                if (isCircle.HasValue && isCircle.Value)
+                {
+                    coords = GetCoordinatesCircleBresenham(first, last)
+                        .Select((item, index) => new {item, index})
+                        .OrderBy(a => a.index % 8)
+                        .Select(a => a.item);
+                }
+                else
+                    coords = GetCoordinatesLineBresenham(first, last);
             }
             else
-                coords = GetCoordinatesLine(first, last);
+            {
+                if (isCircle.HasValue && isCircle.Value) coords = GetCoordinatesCircle(first, last);
+                else
+                    coords = GetCoordinatesLine(first, last);
+            }
 
             coords = coords.AlternateElements(numb);
             var brushColor = new SolidColorBrush(Colors.Black);
-
 
             foreach (var (x, y) in coords)
             {
@@ -124,6 +133,39 @@ namespace Graph_Lab_1
             var y1 = first.Y;
             var x2 = last.X;
             var y2 = last.Y;
+            var x = x1;
+            var y = y1;
+
+            var sx = x1 < x2 ? 1 : -1;
+            var sy = y1 < y2 ? 1 : -1;
+
+            var dx = Math.Abs(x2 - x1);
+            var dy = Math.Abs(y2 - y1);
+
+            Func<double, double, bool> isItOver;
+            if (x1 > x2)
+                isItOver = (i, i1) => i > i1;
+            else
+                isItOver = (i, i1) => i < i1;
+
+            while (isItOver(x, x2))
+            {
+                yield return Tuple.Create(x, y);
+
+                if (Math.Abs(x - x2) < 0.0001)
+                    break;
+                x += sx;
+                y = y1 + sy * (Math.Abs(x - x1) / dx * dy);
+            }
+        }
+
+
+        public IEnumerable<Tuple<double, double>> GetCoordinatesLineBresenham(Point first, Point last)
+        {
+            var x1 = first.X;
+            var y1 = first.Y;
+            var x2 = last.X;
+            var y2 = last.Y;
 
             var sx = x1 < x2 ? 1 : -1;
             var sy = y1 < y2 ? 1 : -1;
@@ -132,7 +174,13 @@ namespace Graph_Lab_1
             var dy = -Math.Abs(y2 - y1);
             var err = dx + dy;
 
-            while (true)
+            Func<double, double, bool> isItOver;
+            if (x1 > x2)
+                isItOver = (i, i1) => i > i1;
+            else
+                isItOver = (i, i1) => i < i1;
+
+            while (isItOver(x1, x2))
             {
                 yield return Tuple.Create(x1, y1);
 
@@ -162,6 +210,27 @@ namespace Graph_Lab_1
             var x2 = last.X;
             var y2 = last.Y;
 
+
+            //var radius = Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+            var radius = Math.Min(Math.Abs(x1 - x2), Math.Abs(y1 - y2));
+
+
+            for (var i = 0.0; i < 360; i += 1)
+            {
+                var angle = i * Math.PI / 180;
+                var x = x1 + radius * Math.Cos(angle);
+                var y = y1 + radius * Math.Sin(angle);
+                yield return Tuple.Create(x, y); //1
+            }
+        }
+
+        public IEnumerable<Tuple<double, double>> GetCoordinatesCircleBresenham(Point first, Point last)
+        {
+            var x1 = (first.X + last.X) / 2;
+            var y1 = (first.Y + last.Y) / 2;
+            var x2 = last.X;
+            var y2 = last.Y;
+
             //var radius = Math.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
             var radius = Math.Min(Math.Abs(x1 - x2), Math.Abs(y1 - y2));
             var x = 0;
@@ -171,7 +240,6 @@ namespace Graph_Lab_1
 
             while (y >= x)
             {
-
                 yield return Tuple.Create(x1 + x, y1 - y); //1
                 yield return Tuple.Create(x1 + y, y1 - x); //2
                 yield return Tuple.Create(x1 + y, y1 + x); //3
@@ -182,18 +250,19 @@ namespace Graph_Lab_1
                 yield return Tuple.Create(x1 - x, y1 - y); //8
 
                 err = 2 * (delta + y) - 1;
-                if ((delta < 0) && (err <= 0))
+                if (delta < 0 && err <= 0)
                 {
                     delta += 2 * ++x + 1;
                     continue;
                 }
-                if ((delta > 0) && (err > 0))
+
+                if (delta > 0 && err > 0)
                 {
                     delta -= 2 * --y + 1;
                     continue;
                 }
-                delta += 2 *(++x - --y);
 
+                delta += 2 * (++x - --y);
             }
         }
     }
